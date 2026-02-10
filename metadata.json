@@ -1,0 +1,5 @@
+{
+  "name": "Commission Tracker",
+  "description": "A real-time commission status tracking application for artists and clients.",
+  "requestFramePermissions": []
+}
