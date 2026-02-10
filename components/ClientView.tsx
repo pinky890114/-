@@ -28,18 +28,18 @@ const ClientView: React.FC<ClientViewProps> = ({ commissions }) => {
         <p className="text-gray-500 font-medium">請輸入你在委託時使用的 暱稱</p>
       </div>
 
-      <div className="flex gap-2 p-2 bg-white rounded-2xl shadow-xl shadow-rose-100/20 border border-rose-50">
+      <div className="flex gap-2 p-2 bg-white rounded-2xl shadow-xl shadow-rose-100/20 border border-rose-50 w-full max-w-full overflow-hidden">
         <input 
           type="text" 
           placeholder="例如: 沈梨"
-          className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all font-medium"
+          className="flex-1 min-w-0 px-3 md:px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all font-medium text-sm md:text-base"
           value={searchNickname}
           onChange={(e) => setSearchNickname(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
         />
         <button 
           onClick={handleSearch}
-          className="bg-rose-400 hover:bg-rose-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all active:scale-95 font-bold shadow-lg shadow-rose-100"
+          className="shrink-0 bg-rose-400 hover:bg-rose-500 text-white px-4 md:px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 font-bold shadow-lg shadow-rose-100 whitespace-nowrap"
         >
           <Search size={18} />
           <span>查詢</span>
@@ -62,15 +62,15 @@ const ClientView: React.FC<ClientViewProps> = ({ commissions }) => {
                 <span className="inline-block px-3 py-1 bg-rose-50 text-rose-500 text-xs font-bold rounded-full mb-2 border border-rose-100">
                   {COMMISSION_TYPES[result.type]}
                 </span>
-                <h3 className="text-2xl font-bold text-gray-800">{result.clientName}</h3>
+                <h3 className="text-2xl font-bold text-gray-800 break-words">{result.clientName}</h3>
                 <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">
                   {result.ownerName && `委託老師: ${result.ownerName}`}
                 </p>
               </div>
-              <div className="text-right flex flex-col items-end">
+              <div className="text-right flex flex-col items-end pl-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">目前狀態</p>
-                <div className="bg-rose-100/80 px-5 py-3 rounded-2xl border border-rose-200 shadow-sm">
-                  <p className="text-xl font-bold text-rose-600 leading-none">
+                <div className="bg-rose-100/80 px-4 py-3 rounded-2xl border border-rose-200 shadow-sm whitespace-nowrap">
+                  <p className="text-lg md:text-xl font-bold text-rose-600 leading-none">
                     {STEPS[result.type][result.status].label}
                   </p>
                   <p className="text-xs font-bold text-rose-400 mt-1">

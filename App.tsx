@@ -240,21 +240,27 @@ export default function App() {
         )}
       </main>
 
-      <footer className="max-w-4xl mx-auto mt-16 text-center text-rose-300 text-[10px] font-bold tracking-[0.2em] uppercase pb-10">
-        <p>© 2026 委託進度追蹤系統</p>
-        <div className="mt-2 opacity-50 flex justify-center items-center gap-2">
-            <span>POWERED BY REACT & {isDemoMode ? 'LOCAL STORAGE' : 'FIREBASE'}</span>
-            {view === 'client' && (
-              <a 
-                href="/admin" 
-                onClick={handleSwitchToAdmin}
-                className="hover:text-rose-500 transition-colors cursor-pointer ml-2"
-                title="老師後台"
-              >
-                <Lock size={10} />
-              </a>
-            )}
+      <footer className="max-w-4xl mx-auto mt-16 text-center text-rose-300 pb-10">
+        <div className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-70">
+          <p>© 2026 委託進度追蹤系統</p>
+          <div className="mt-2 flex justify-center items-center gap-2">
+              <span>POWERED BY REACT & {isDemoMode ? 'LOCAL STORAGE' : 'FIREBASE'}</span>
+          </div>
         </div>
+        
+        {view === 'client' && (
+          <div className="mt-8 border-t border-rose-100/50 pt-4 flex justify-center">
+            <a 
+              href="/admin" 
+              onClick={handleSwitchToAdmin}
+              className="group flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-rose-50 transition-all cursor-pointer"
+              title="前往後台"
+            >
+              <Lock size={12} className="text-rose-200 group-hover:text-rose-400 transition-colors" />
+              <span className="text-[10px] font-bold text-rose-200 group-hover:text-rose-400 transition-colors">老師後台登入</span>
+            </a>
+          </div>
+        )}
       </footer>
     </div>
   );
