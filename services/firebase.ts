@@ -6,7 +6,7 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 // 設定步驟：
 // 1. 到 https://console.firebase.google.com/ 建立新專案
 // 2. 在專案設定中新增 Web App，複製 firebaseConfig 物件
-// 3. 將複製的內容貼在下方 YOUR_FIREBASE_CONFIG 變數中
+// 3. 將複製的內容貼在下方 firebaseConfig 變數中
 // 4. 到 Firebase Console -> Build -> Firestore Database -> Create Database (選擇 Production mode)
 // 5. 到 Firebase Console -> Build -> Authentication -> Get Started -> 啟用 Anonymous (匿名登入)
 // ------------------------------------------------------------------
@@ -40,8 +40,8 @@ let isMockConfig = false;
 const getConfig = () => {
   // 1. First priority: Use the hardcoded config if the user has updated it
   // Check if the user has replaced the dummy 'projectId' with a real one
-  if (YOUR_FIREBASE_CONFIG.projectId !== "dummy-project") {
-    return YOUR_FIREBASE_CONFIG;
+  if (firebaseConfig.projectId !== "dummy-project") {
+    return firebaseConfig;
   }
 
   // 2. Second priority: Injected globals (for specific dev environments)
@@ -65,7 +65,7 @@ const getConfig = () => {
   // 3. Fallback: Use the dummy config and enable Mock Mode
   console.warn("No valid Firebase config found. Using Mock/Demo mode.");
   isMockConfig = true;
-  return YOUR_FIREBASE_CONFIG;
+  return firebaseConfig;
 };
 
 try {
@@ -76,7 +76,7 @@ try {
 } catch (error) {
   console.error("Firebase initialization failed:", error);
   // Last resort fallback
-  app = initializeApp(YOUR_FIREBASE_CONFIG, 'fallback');
+  app = initializeApp(firebaseConfig, 'fallback');
   auth = getAuth(app);
   db = getFirestore(app);
   isMockConfig = true;
