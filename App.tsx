@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { signInAnonymously, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
-import { ClipboardList, WifiOff } from 'lucide-react';
+import { ClipboardList, WifiOff, Lock } from 'lucide-react';
 import { auth, db, isMockConfig } from './services/firebase';
 import { APP_ID } from './constants';
 import { Commission, AdminUser, CommissionFormData } from './types';
@@ -13,12 +13,34 @@ const LOCAL_STORAGE_KEY = `commission_tracker_${APP_ID}_data`;
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'client' | 'admin'>('client'); 
+  
+  // Determine initial view based on URL path
+  const [view, setView] = useState<'client' | 'admin'>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+      return 'admin';
+    }
+    return 'client';
+  });
+
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(isMockConfig);
   
   // Admin Authentication State
   const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
+
+  // --- Handle Browser Navigation (Back/Forward) ---
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname === '/admin') {
+        setView('admin');
+      } else {
+        setView('client');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // --- Initialize Firebase Auth ---
   useEffect(() => {
@@ -90,8 +112,18 @@ export default function App() {
   };
 
   // --- Actions ---
+  
+  // Switch to Admin View
+  const handleSwitchToAdmin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.history.pushState({}, '', '/admin');
+    setView('admin');
+  };
+
+  // Switch to Client View (Logout)
   const handleAdminLogout = () => {
     setCurrentAdmin(null);
+    window.history.pushState({}, '', '/');
     setView('client');
   };
 
@@ -177,27 +209,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Header Navigation */}
-      <nav className={`max-w-4xl mx-auto flex justify-between items-center mb-12 ${isDemoMode ? 'mt-8' : ''}`}>
+      {/* Header */}
+      <nav className={`max-w-4xl mx-auto flex justify-center items-center mb-12 ${isDemoMode ? 'mt-8' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center text-rose-500 shadow-sm shadow-rose-50">
             <ClipboardList size={24} />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-gray-900">委託進度追蹤</h1>
-        </div>
-        <div className="flex gap-2 bg-rose-50/50 p-1 rounded-lg border border-rose-100/50">
-          <button 
-            onClick={() => setView('client')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'client' ? 'bg-white shadow-sm text-rose-600' : 'text-gray-500'}`}
-          >
-            客戶查詢
-          </button>
-          <button 
-            onClick={() => setView('admin')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white shadow-sm text-rose-600' : 'text-gray-500'}`}
-          >
-            老師登入
-          </button>
         </div>
       </nav>
 
@@ -224,9 +242,19 @@ export default function App() {
 
       <footer className="max-w-4xl mx-auto mt-16 text-center text-rose-300 text-[10px] font-bold tracking-[0.2em] uppercase pb-10">
         <p>© 2026 委託進度追蹤系統</p>
-        <p className="mt-1 opacity-50 flex justify-center items-center gap-1">
-            POWERED BY REACT & {isDemoMode ? 'LOCAL STORAGE' : 'FIREBASE'}
-        </p>
+        <div className="mt-2 opacity-50 flex justify-center items-center gap-2">
+            <span>POWERED BY REACT & {isDemoMode ? 'LOCAL STORAGE' : 'FIREBASE'}</span>
+            {view === 'client' && (
+              <a 
+                href="/admin" 
+                onClick={handleSwitchToAdmin}
+                className="hover:text-rose-500 transition-colors cursor-pointer ml-2"
+                title="老師後台"
+              >
+                <Lock size={10} />
+              </a>
+            )}
+        </div>
       </footer>
     </div>
   );
