@@ -26,7 +26,8 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
     setError(null);
     
     // Validate inputs
-    const trimmedId = formData.clientId.trim();
+    // Fix: Handle optional clientId with fallback
+    const trimmedId = (formData.clientId || '').trim();
     const trimmedName = formData.clientName.trim();
     
     if (!trimmedId || !trimmedName) {
