@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { signInAnonymously, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
-import { ClipboardList, WifiOff, Lock } from 'lucide-react';
+import { WifiOff, Lock } from 'lucide-react';
 import { auth, db, isMockConfig } from './services/firebase';
 import { APP_ID } from './constants';
 import { Commission, AdminUser, CommissionFormData } from './types';
@@ -16,8 +16,12 @@ export default function App() {
   
   // Determine initial view based on URL path
   const [view, setView] = useState<'client' | 'admin'>(() => {
-    if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
-      return 'admin';
+    try {
+      if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+        return 'admin';
+      }
+    } catch (e) {
+      // Ignore security errors when accessing location
     }
     return 'client';
   });
@@ -31,9 +35,13 @@ export default function App() {
   // --- Handle Browser Navigation (Back/Forward) ---
   useEffect(() => {
     const handlePopState = () => {
-      if (window.location.pathname === '/admin') {
-        setView('admin');
-      } else {
+      try {
+        if (window.location.pathname === '/admin') {
+          setView('admin');
+        } else {
+          setView('client');
+        }
+      } catch (e) {
         setView('client');
       }
     };
@@ -65,10 +73,6 @@ export default function App() {
     if (!isDemoMode) {
       const unsubscribe = onAuthStateChanged(auth, (u) => {
         setUser(u);
-        if (!u && !isDemoMode) {
-            // If we lose auth unexpectedly, we might want to consider demo mode, 
-            // but usually we just wait for reconnection.
-        }
       });
       return () => unsubscribe();
     }
@@ -98,8 +102,6 @@ export default function App() {
       setCommissions(data);
     }, (error) => {
       console.error("Firestore Error:", error);
-      // Optional: Fallback to demo mode on permission denied or connection loss?
-      // setIsDemoMode(true);
     });
 
     return () => unsubscribe();
@@ -108,49 +110,78 @@ export default function App() {
   // Helper to sync local state to storage in Demo Mode
   const syncLocal = (newData: Commission[]) => {
     setCommissions(newData);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
+    } catch (e) {
+      console.warn("LocalStorage write failed (security restriction):", e);
+    }
+  };
+
+  // Helper for safe navigation
+  const safePushState = (path: string) => {
+    try {
+      window.history.pushState({}, '', path);
+    } catch (e) {
+      console.warn("History pushState failed (security restriction):", e);
+    }
   };
 
   // --- Actions ---
   
   // Switch to Admin View
-  const handleSwitchToAdmin = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.history.pushState({}, '', '/admin');
+  const handleSwitchToAdmin = () => {
+    safePushState('/admin');
     setView('admin');
+  };
+
+  const handleAdminLoginSuccess = (admin: AdminUser) => {
+    console.log("Admin logged in successfully:", admin);
+    // 1. Set admin data
+    setCurrentAdmin(admin);
+    // 2. Force view to admin (in case it wasn't for some reason)
+    setView('admin'); 
+    // 3. Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Switch to Client View (Logout)
   const handleAdminLogout = () => {
     setCurrentAdmin(null);
-    window.history.pushState({}, '', '/');
+    safePushState('/');
     setView('client');
   };
 
   const handleAddCommission = async (data: CommissionFormData) => {
-    if (!data.clientId || !currentAdmin) throw new Error("缺少必要資訊");
+    const targetOwnerId = currentAdmin?.ownerId || data.ownerId;
     
-    // Create a composite unique ID to allow multiple teachers to use the same "clientId" (e.g. 001)
-    // without overwriting each other's data.
-    const uniqueDocId = `${currentAdmin.ownerId}_${data.clientId}`;
+    // Automatically determine teacher name if not logged in as admin
+    let targetOwnerName = currentAdmin?.name;
+    if (!targetOwnerName) {
+      // If submitting from client form, decide name based on type
+      targetOwnerName = data.type === 'FLOWING_SAND' ? '蘇沐' : '沈梨';
+    }
+
+    if (!data.clientId || !targetOwnerId) throw new Error("缺少必要資訊");
+    
+    const uniqueDocId = `${targetOwnerId}_${data.clientId}`;
 
     const newCommission: Commission = {
       ...data,
+      clientId: data.clientId,
       id: uniqueDocId, 
-      ownerId: currentAdmin.ownerId,
-      ownerName: currentAdmin.name,
-      updatedAt: Date.now()
+      ownerId: targetOwnerId,
+      ownerName: targetOwnerName,
+      updatedAt: Date.now(),
+      createdAt: Date.now()
     };
 
     if (isDemoMode) {
-      // Check for duplicates in local mode (based on uniqueDocId)
       const newData = [...commissions.filter(c => c.id !== uniqueDocId), newCommission];
       syncLocal(newData);
-      await new Promise(r => setTimeout(r, 500)); // Fake network delay
+      await new Promise(r => setTimeout(r, 500));
       return;
     }
     
-    // Real Firebase Logic
     if (!auth.currentUser) {
        try { await signInAnonymously(auth); } catch(e) { 
          throw new Error("無法連接至資料庫，請刷新頁面或檢查網路");
@@ -184,64 +215,86 @@ export default function App() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('確定要刪除這筆委託嗎？')) {
-      if (isDemoMode) {
-        const newData = commissions.filter(c => c.id !== id);
-        syncLocal(newData);
-        return;
-      }
+    console.log("Attempting to delete commission ID:", id); // Debug log
 
-      try {
-        await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'commissions', id));
-      } catch (err) {
-        console.error("Delete failed", err);
+    if (!id) {
+      alert("錯誤：無效的委託 ID");
+      return;
+    }
+
+    if (!window.confirm('確定要刪除這筆委託嗎？此動作無法復原。')) return;
+
+    if (isDemoMode) {
+      const newData = commissions.filter(c => c.id !== id);
+      syncLocal(newData);
+      return;
+    }
+
+    try {
+      // Ensure auth exists before write operation
+      if (!auth.currentUser) {
+        console.log("No user, attempting anonymous login...");
+        await signInAnonymously(auth);
       }
+      
+      console.log("Deleting document from Firestore...");
+      await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'commissions', id));
+      console.log("Delete successful");
+    } catch (err: any) {
+      console.error("Delete failed", err);
+      alert(`刪除失敗：${err.message || "請檢查網路連線或重新登入後再試"}`);
     }
   };
 
+  // --- Render Logic ---
+  const renderMainContent = () => {
+    if (view === 'client') {
+      return (
+        <ClientView 
+          commissions={commissions} 
+          onRequestSubmit={handleAddCommission}
+        />
+      );
+    }
+
+    // Admin View Logic
+    // If currentAdmin is null, show login
+    if (!currentAdmin) {
+      return <AdminLogin onLogin={handleAdminLoginSuccess} />;
+    }
+
+    // If currentAdmin is set, show dashboard
+    return (
+      <AdminDashboard 
+        key={currentAdmin.ownerId} // Force remount if admin changes
+        currentAdmin={currentAdmin}
+        commissions={commissions}
+        onLogout={handleAdminLogout}
+        onAdd={handleAddCommission}
+        onDelete={handleDelete}
+        onUpdateStatus={handleUpdateStatus}
+      />
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#FFF9F9] text-gray-800 font-sans p-4 md:p-8">
+    // Changed bg-[#FFF9F9] to bg-[#F9F5F0] (Warm Vintage Cream)
+    // Changed text-gray-800 to text-[#5C4033] (Dark Coffee)
+    <div className="min-h-screen bg-[#F9F5F0] text-[#5C4033] font-sans p-4 md:p-8">
       {/* Demo Mode Banner */}
       {isDemoMode && (
-        <div className="bg-orange-100 text-orange-700 px-4 py-2 text-center text-xs font-bold tracking-wider fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2">
+        <div className="bg-[#A67C52] text-white px-4 py-2 text-center text-xs font-bold tracking-wider fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 shadow-md">
           <WifiOff size={14} />
           <span>示範模式 (資料僅儲存於本機)</span>
         </div>
       )}
 
-      {/* Header */}
-      <nav className={`max-w-4xl mx-auto flex justify-center items-center mb-12 ${isDemoMode ? 'mt-8' : ''}`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center text-rose-500 shadow-sm shadow-rose-50">
-            <ClipboardList size={24} />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900">委託進度追蹤</h1>
-        </div>
-      </nav>
-
-      <main className="max-w-2xl mx-auto pb-20">
-        {view === 'client' ? (
-          <ClientView commissions={commissions} />
-        ) : (
-          <>
-            {!currentAdmin ? (
-              <AdminLogin onLogin={setCurrentAdmin} />
-            ) : (
-              <AdminDashboard 
-                currentAdmin={currentAdmin}
-                commissions={commissions}
-                onLogout={handleAdminLogout}
-                onAdd={handleAddCommission}
-                onDelete={handleDelete}
-                onUpdateStatus={handleUpdateStatus}
-              />
-            )}
-          </>
-        )}
+      <main className={`max-w-2xl mx-auto pb-20 ${isDemoMode ? 'pt-12' : 'pt-4'}`}>
+        {renderMainContent()}
       </main>
 
-      <footer className="max-w-4xl mx-auto mt-16 text-center text-rose-300 pb-10">
-        <div className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-70">
+      <footer className="max-w-4xl mx-auto mt-16 text-center text-[#A67C52]/60 pb-10">
+        <div className="text-[10px] font-bold tracking-[0.2em] uppercase">
           <p>© 2026 委託進度追蹤系統</p>
           <div className="mt-2 flex justify-center items-center gap-2">
               <span>POWERED BY REACT & {isDemoMode ? 'LOCAL STORAGE' : 'FIREBASE'}</span>
@@ -249,16 +302,14 @@ export default function App() {
         </div>
         
         {view === 'client' && (
-          <div className="mt-8 border-t border-rose-100/50 pt-4 flex justify-center">
-            <a 
-              href="/admin" 
+          <div className="mt-8 border-t border-[#D6C0B3]/50 pt-4 flex justify-center">
+            <button 
               onClick={handleSwitchToAdmin}
-              className="group flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-rose-50 transition-all cursor-pointer"
+              className="group flex items-center gap-1.5 p-3 rounded-full hover:bg-[#F2EFE9] transition-all cursor-pointer"
               title="前往後台"
             >
-              <Lock size={12} className="text-rose-200 group-hover:text-rose-400 transition-colors" />
-              <span className="text-[10px] font-bold text-rose-200 group-hover:text-rose-400 transition-colors">老師後台登入</span>
-            </a>
+              <Lock size={12} className="text-[#D6C0B3] group-hover:text-[#A67C52] transition-colors" />
+            </button>
           </div>
         )}
       </footer>

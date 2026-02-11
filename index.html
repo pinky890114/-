@@ -7,7 +7,7 @@
     
     <!-- PWA Settings -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#FFF9F9" />
+    <meta name="theme-color" content="#F9F5F0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="委託追蹤" />
@@ -20,6 +20,20 @@
         font-family: 'Noto Sans TC', sans-serif;
         /* Prevent pull-to-refresh on mobile to feel more like an app */
         overscroll-behavior-y: none;
+      }
+      /* Custom scrollbar for vintage feel */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #F2EFE9; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #D6C0B3; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #A67C52; 
       }
     </style>
   <script type="importmap">

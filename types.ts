@@ -16,18 +16,28 @@ export interface Commission {
   clientName: string;
   type: CommissionType;
   status: number;
-  note: string;
+  note: string; // Admin's public note
   ownerId: string;
   ownerName: string;
   updatedAt: number;
+  createdAt?: number; // Creation timestamp
+  // New fields for requests
+  contactInfo?: string; 
+  description?: string;
+  price?: number;
 }
 
 export interface CommissionFormData {
-  clientId: string;
+  clientId?: string; // Optional for public requests (auto-generated)
   clientName: string;
   type: CommissionType;
   status: number;
   note: string;
+  // New fields
+  ownerId?: string; // Target artist ID
+  contactInfo?: string;
+  description?: string;
+  price?: number;
 }
 
 // Global variable declarations for the injected environment variables

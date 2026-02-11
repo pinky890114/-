@@ -15,7 +15,8 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
     clientName: '',
     type: 'FLOWING_SAND',
     status: 0,
-    note: ''
+    note: '',
+    price: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,13 +59,13 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border-2 border-rose-50 shadow-xl mb-8 animate-in slide-in-from-top-4 relative">
+    <div className="bg-white p-6 rounded-2xl border-2 border-[#E6DCC3] shadow-xl mb-8 animate-in slide-in-from-top-4 relative">
       <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg text-gray-800">建立由「{currentAdmin.name}」老師負責的委託</h3>
+          <h3 className="font-bold text-lg text-[#5C4033]">建立由「{currentAdmin.name}」老師負責的委託</h3>
           <button 
             type="button"
             onClick={onClose} 
-            className="text-gray-300 hover:text-gray-500 transition-colors"
+            className="text-[#D6C0B3] hover:text-[#A67C52] transition-colors"
             disabled={isSubmitting}
           >
             <X size={20} />
@@ -80,36 +81,35 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
 
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
         <div className="col-span-1">
-          <label className="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-widest">內部管理 ID (不重複)</label>
+          <label className="text-[10px] font-bold text-[#A67C52] block mb-1 uppercase tracking-widest">內部管理 ID (不重複)</label>
           <input 
             required
             disabled={isSubmitting}
-            className="w-full border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-rose-100 rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50"
+            className="w-full border-2 border-[#E6DCC3] bg-[#F9F5F0] focus:bg-white focus:border-[#A67C52] rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50 text-[#5C4033]"
             placeholder="例如: SN-001"
             value={formData.clientId}
             onChange={e => setFormData({...formData, clientId: e.target.value})}
           />
         </div>
         <div className="col-span-1">
-          <label className="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-widest">客戶暱稱 (查詢用)</label>
+          <label className="text-[10px] font-bold text-[#A67C52] block mb-1 uppercase tracking-widest">客戶暱稱 (查詢用)</label>
           <input 
             required
             disabled={isSubmitting}
-            className="w-full border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-rose-100 rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50"
+            className="w-full border-2 border-[#E6DCC3] bg-[#F9F5F0] focus:bg-white focus:border-[#A67C52] rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50 text-[#5C4033]"
             placeholder="例如: 沈梨"
             value={formData.clientName}
             onChange={e => setFormData({...formData, clientName: e.target.value})}
           />
         </div>
         <div className="col-span-1">
-          <label className="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-widest">委託類型</label>
+          <label className="text-[10px] font-bold text-[#A67C52] block mb-1 uppercase tracking-widest">委託類型</label>
           <select 
             disabled={isSubmitting}
-            className="w-full border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-rose-100 rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50"
+            className="w-full border-2 border-[#E6DCC3] bg-[#F9F5F0] focus:bg-white focus:border-[#A67C52] rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50 text-[#5C4033]"
             value={formData.type}
             onChange={e => {
               const newType = e.target.value as CommissionType;
-              // Reset status if needed, though here 0 is safe
               setFormData({...formData, type: newType, status: 0});
             }}
           >
@@ -118,21 +118,35 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
           </select>
         </div>
         <div className="col-span-1">
-          <label className="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-widest">初始階段</label>
+          <label className="text-[10px] font-bold text-[#A67C52] block mb-1 uppercase tracking-widest">初始階段</label>
           <select 
             disabled={isSubmitting}
-            className="w-full border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-rose-100 rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50"
+            className="w-full border-2 border-[#E6DCC3] bg-[#F9F5F0] focus:bg-white focus:border-[#A67C52] rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50 text-[#5C4033]"
             value={formData.status}
             onChange={e => setFormData({...formData, status: parseInt(e.target.value)})}
           >
             {STEPS[formData.type].map((s, i) => <option key={i} value={i}>{s.label}</option>)}
           </select>
         </div>
+        
+        {/* New Price Field */}
         <div className="col-span-2">
-          <label className="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-widest">備註訊息 (客戶可見)</label>
+           <label className="text-[10px] font-bold text-[#A67C52] block mb-1 uppercase tracking-widest">委託金額 ($)</label>
+           <input 
+             type="number"
+             disabled={isSubmitting}
+             className="w-full border-2 border-[#E6DCC3] bg-[#F9F5F0] focus:bg-white focus:border-[#A67C52] rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50 text-[#5C4033]"
+             placeholder="例如: 1200"
+             value={formData.price || ''}
+             onChange={e => setFormData({...formData, price: e.target.value ? parseInt(e.target.value) : undefined})}
+           />
+        </div>
+
+        <div className="col-span-2">
+          <label className="text-[10px] font-bold text-[#A67C52] block mb-1 uppercase tracking-widest">備註訊息 (客戶可見)</label>
           <textarea 
             disabled={isSubmitting}
-            className="w-full border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-rose-100 rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50"
+            className="w-full border-2 border-[#E6DCC3] bg-[#F9F5F0] focus:bg-white focus:border-[#A67C52] rounded-xl p-2.5 text-sm transition-all outline-none font-medium disabled:opacity-50 text-[#5C4033]"
             rows={2}
             value={formData.note}
             onChange={e => setFormData({...formData, note: e.target.value})}
@@ -142,7 +156,7 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
           <button 
             type="button" 
             onClick={onClose} 
-            className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-600"
+            className="px-4 py-2 text-sm font-bold text-[#D6C0B3] hover:text-[#A67C52]"
             disabled={isSubmitting}
           >
             取消
@@ -150,7 +164,7 @@ const CommissionForm: React.FC<CommissionFormProps> = ({ currentAdmin, onClose, 
           <button 
             type="submit" 
             disabled={isSubmitting}
-            className="px-5 py-2.5 bg-rose-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-rose-100 transition-all active:scale-95 disabled:opacity-70 disabled:active:scale-100 flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#BC4A3C] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#BC4A3C]/20 transition-all active:scale-95 disabled:opacity-70 disabled:active:scale-100 flex items-center gap-2"
           >
             {isSubmitting ? (
               <>

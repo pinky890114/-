@@ -12,23 +12,14 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 // ------------------------------------------------------------------
 
 const firebaseConfig = {
-
   apiKey: "AIzaSyAgfzJAlhGowci25Q4ELjPbb_yz9b1SgKE",
-
   authDomain: "commission-tracker-e6da0.firebaseapp.com",
-
   projectId: "commission-tracker-e6da0",
-
   storageBucket: "commission-tracker-e6da0.firebasestorage.app",
-
   messagingSenderId: "859578190938",
-
   appId: "1:859578190938:web:cb6274fb81816183501c63",
-
   measurementId: "G-2GGNJ16VZK"
-
 };
-
 
 // ------------------------------------------------------------------
 
